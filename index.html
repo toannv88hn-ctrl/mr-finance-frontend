@@ -401,41 +401,48 @@
         function getTimestamp() { const d = new Date(); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}; ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`; }
         
        async function fetchWeatherAndLocation() {
-    // Hàm gọi lên server Render để lấy dữ liệu sau khi có tọa độ
-    const getWeatherDataFromServer = async (lat = "", lon = "") => {
+    // Hàm gọi lên server Render (được viết lại tường minh để tránh lẫn lộn tên biến)
+    const getWeatherDataFromServer = async (vido = "", kinhdo = "") => {
         try {
-            const res = await fetch(`${API_URL}/api/weather-proxy?lat=${lat}&lon=${lon}`);
+            // Truyền trực tiếp biến vido và kinhdo vào query string
+            const res = await fetch(`${API_URL}/api/weather-proxy?lat=${vido}&lon=${kinhdo}`);
             const data = await res.json();
-            document.getElementById('weatherInfo').innerHTML = `
-                <span class="font-bold text-amber-400">${data.city}</span><br>
-                <span class="text-white">${data.temperature}°C</span>
-            `;
+            
+            if(document.getElementById('weatherInfo')) {
+                document.getElementById('weatherInfo').innerHTML = `
+                    <span class="font-bold text-amber-400">${data.city}</span><br>
+                    <span class="text-white">${data.temperature}°C</span>
+                `;
+            }
         } catch (e) {
             document.getElementById('weatherInfo').innerHTML = "Lỗi thời tiết";
         }
     };
 
     try {
-        // Kiểm tra xem trình duyệt/điện thoại có cho phép lấy GPS không
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 async (pos) => {
-                    // Nếu người dùng cho phép quyền GPS -> Lấy thời tiết theo vị trí thực tế
-                    const { latitude, longitude } = pos.coords;
-                    await getWeatherDataFromServer(latitude, longitude);
+                    // Lấy chính xác tên thuộc tính của hệ thống Android
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    // Bắn chính xác tọa độ này lên Server
+                    await getWeatherDataFromServer(lat, lon);
                 },
                 async (error) => {
-                    // Nếu người dùng từ chối hoặc APK chặn quyền GPS -> Lấy mặc định (Hà Nội) tránh bị lỗi hiển thị
+                    // Nếu lỗi GPS hoặc phản hồi chậm, lấy mặc định Hà Nội
+                    console.log("GPS lỗi hoặc từ chối, dùng mặc định");
                     await getWeatherDataFromServer();
                 },
-                { timeout: 5000 } // Quá 5 giây không lấy được vị trí thì bỏ qua để lấy mặc định
+                { enableHighAccuracy: true, timeout: 10000 } // Bật định vị độ chính xác cao cho điện thoại
             );
         } else {
-            // Thiết bị không hỗ trợ định vị -> Lấy mặc định luôn
             await getWeatherDataFromServer();
         }
     } catch(e) { 
-        document.getElementById('weatherInfo').innerHTML = "Lỗi thời tiết"; 
+        if(document.getElementById('weatherInfo')) {
+            document.getElementById('weatherInfo').innerHTML = "Lỗi thời tiết"; 
+        }
     }
 }
 
