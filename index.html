@@ -405,7 +405,7 @@
     const getWeatherDataFromServer = async (vido = "", kinhdo = "") => {
         try {
             // Truyền trực tiếp biến vido và kinhdo vào query string
-            const res = await fetch(`${API_URL}/api/weather-proxy?lat=${vido}&lon=${kinhdo}`);
+            const res = await fetch(`${API_URL}/api/weather-proxy?lat=${vido}&lon=${kinhdo}&_=${Date.now()}`);
             const data = await res.json();
             
             if(document.getElementById('weatherInfo')) {
